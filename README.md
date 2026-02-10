@@ -39,11 +39,120 @@ instrux build MyAgent
 |---|---|
 | `instrux init <name>` | Scaffold a simple-merge agent |
 | `instrux init -t <name>` | Scaffold a template-compiled agent |
+| `instrux config:init` | Create repository-level config file |
 | `instrux build <name>` | Build (merge or compile) an agent |
 | `instrux build --all` | Build all agents |
 | `instrux list` | List all agents |
 | `instrux config <name>` | Show agent configuration |
 | `instrux validate <name>` | Check required source files |
+
+---
+
+## Repository Configuration
+
+A repository-level config file (`instrux.json`) at your project root sets default settings for all agents.
+
+**Auto-creation:** When you run `instrux init` for the first time, the repository config is created automatically with sensible defaults.
+
+You can also create it manually:
+
+```bash
+instrux config:init
+```
+
+This creates an `instrux.json` file with default settings:
+
+```json
+{
+  "agentsDirectory": "agents",
+  "outputDirectory": "out",
+  "mergeSettings": {
+    "addSeparators": true,
+    "separatorStyle": "---",
+    "includeFileHeaders": false,
+    "preserveFormatting": true,
+    "generateHash": false,
+    "useTimestamp": false
+  },
+  "frontmatter": {
+    "output": "strip"
+  },
+  "sources": ["agents/base/**/*.md"]
+}
+```
+
+**Configuration Options:**
+
+| Field | Default | Description |
+|---|---|---|
+| `agentsDirectory` | `"agents"` | Directory containing agent folders (e.g., `"src/agents"` for src/agents/MyAgent/) |
+| `outputDirectory` | `"out"` | Where to write compiled output files |
+| `mergeSettings` | See above | Default merge behavior for all agents |
+| `frontmatter` | `{ output: "strip" }` | How to handle frontmatter in output |
+| `sources` | `["agents/base/**/*.md"]` | Default source patterns for template mode |
+
+**Benefits:**
+- Set defaults once for all agents
+- Individual agent configs inherit these settings
+- Agent configs can override any setting
+- Keep agent configs minimal and focused
+
+**Example workflow:**
+
+```bash
+# 1. Create your first agent (auto-creates instrux.json)
+instrux init MyAgent
+
+# 2. (Optional) Edit instrux.json to customize defaults
+
+# 3. Create more agents - they inherit repo defaults
+instrux init AnotherAgent
+
+# 4. Agent configs only need to specify what's unique
+```
+
+**Using a custom agents directory:**
+
+To organize agents in a different location (e.g., `src/agents`):
+
+```bash
+# 1. Create instrux.json first
+instrux config:init
+
+# 2. Edit instrux.json and change agentsDirectory
+# {
+#   "agentsDirectory": "src/agents",
+#   ...
+# }
+
+# 3. Now create agents - they'll be in src/agents/
+instrux init MyAgent
+# Creates: src/agents/MyAgent/agent.json
+```
+
+**Config inheritance and precedence:**
+
+Settings are merged in this order (later overrides earlier):
+1. Built-in defaults (`DEFAULT_MERGE_SETTINGS`)
+2. Repository config (`instrux.json`)
+3. Agent config (`agents/<name>/agent.json`)
+
+This means:
+- If a setting is in the agent config, it's used
+- Otherwise, if it's in the repo config, it's used
+- Otherwise, the built-in default is used
+
+You can make agent configs minimal by removing fields you want to inherit:
+
+```json
+{
+  "name": "MyAgent",
+  "description": "My agent",
+  "files": [...]
+  // outputDirectory inherited from instrux.json
+  // mergeSettings inherited from instrux.json
+}
+```
 
 ---
 

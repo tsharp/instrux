@@ -7,10 +7,12 @@
 export { InstruxEngine } from './engine';
 export { InstruxCompiler } from './compiler';
 export type { CompileResult } from './compiler';
-export { initAgent, initTemplateAgent } from './init';
+export { initAgent, initTemplateAgent, initRepoConfig } from './init';
 export { buildSourceIndex, sortSourceFiles, stripInstruxMeta, serializeFrontmatter } from './frontmatter';
 export type {
   AgentConfig,
+  ResolvedAgentConfig,
+  RepoConfig,
   InstruxFile,
   MergeSettings,
   ValidationResult,

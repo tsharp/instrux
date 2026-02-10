@@ -5,6 +5,7 @@
  *
  * Commands:
  *   instrux init <name>       Scaffold a new agent
+ *   instrux config:init       Create repository-level config
  *   instrux build <name>      Merge instruction files for an agent
  *   instrux build --all       Build all agents
  *   instrux list              List available agents
@@ -15,7 +16,7 @@
 import { Command } from 'commander';
 import * as path from 'path';
 import { InstruxEngine } from './engine';
-import { initAgent, initTemplateAgent } from './init';
+import { initAgent, initTemplateAgent, initRepoConfig } from './init';
 
 const pkg = require('../package.json');
 const program = new Command();
@@ -39,7 +40,15 @@ program
         : await initAgent(cwd, name);
 
       const mode = opts.template ? 'template' : 'simple';
+      const isFirstAgent = created.includes('instrux.json');
+      
       console.log(`\n\u2705 Agent "${name}" initialized (${mode} mode)!\n`);
+      
+      if (isFirstAgent) {
+        console.log('Created repository config (instrux.json) with default settings.');
+        console.log('This provides defaults for all agents in the project.\n');
+      }
+      
       console.log('Created:');
       created.forEach(f => console.log(`  ${f}`));
 
@@ -55,6 +64,31 @@ program
         console.log(`  2. Edit agents/${name}/agent.json to add more files if needed`);
         console.log(`  3. Run: instrux build ${name}\n`);
       }
+    } catch (err: any) {
+      console.error(`❌ ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+// ── config:init ────────────────────────────────────────────
+
+program
+  .command('config:init')
+  .description('Create a repository-level config file (instrux.json)')
+  .action(async () => {
+    try {
+      const cwd = process.cwd();
+      const created = await initRepoConfig(cwd);
+
+      console.log(`\n✅ Repository config created!\n`);
+      console.log(`Created: ${created}\n`);
+      console.log('This file provides default settings for all agents.');
+      console.log('Individual agent configs will inherit and can override these settings.\n');
+      console.log('Default settings:');
+      console.log('  - outputDirectory: "out"');
+      console.log('  - mergeSettings: standard defaults');
+      console.log('  - frontmatter: { output: "strip" }');
+      console.log('  - sources: ["agents/base/**/*.md"]\n');
     } catch (err: any) {
       console.error(`❌ ${err.message}`);
       process.exit(1);
@@ -156,9 +190,13 @@ program
       });
       console.log();
       console.log('  Merge settings:');
-      Object.entries(config.mergeSettings).forEach(([k, v]) => {
-        console.log(`    ${k}: ${v}`);
-      });
+      const ms = config.mergeSettings;
+      console.log(`    addSeparators: ${ms.addSeparators}`);
+      console.log(`    separatorStyle: ${ms.separatorStyle}`);
+      console.log(`    includeFileHeaders: ${ms.includeFileHeaders}`);
+      console.log(`    preserveFormatting: ${ms.preserveFormatting}`);
+      console.log(`    generateHash: ${ms.generateHash}`);
+      console.log(`    useTimestamp: ${ms.useTimestamp}`);
       console.log();
     } catch (err: any) {
       console.error(`❌ ${err.message}`);

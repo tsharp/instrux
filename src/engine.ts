@@ -11,33 +11,93 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import {
   AgentConfig,
+  ResolvedAgentConfig,
+  RepoConfig,
   BuildResult,
   ValidationResult,
+  MergeSettings,
+  DEFAULT_MERGE_SETTINGS,
 } from './types';
 import { InstruxCompiler } from './compiler';
 
 export class InstruxEngine {
   private rootDir: string;
+  private repoConfig: RepoConfig | null = null;
 
   constructor(rootDir?: string) {
     this.rootDir = rootDir ?? process.cwd();
+  }
+
+  // ── Repo config loading ───────────────────────
+
+  /**
+   * Load repository-level configuration from instrux.json at project root.
+   * This is cached after the first load.
+   */
+  async loadRepoConfig(): Promise<RepoConfig | null> {
+    if (this.repoConfig !== null) {
+      return this.repoConfig;
+    }
+
+    const configPath = path.join(this.rootDir, 'instrux.json');
+    
+    if (!(await fs.pathExists(configPath))) {
+      this.repoConfig = {};
+      return this.repoConfig;
+    }
+
+    try {
+      const raw = await fs.readFile(configPath, 'utf-8');
+      this.repoConfig = JSON.parse(raw) as RepoConfig;
+      return this.repoConfig;
+    } catch (err) {
+      console.warn(`⚠  Warning: Failed to parse instrux.json: ${err}`);
+      this.repoConfig = {};
+      return this.repoConfig;
+    }
+  }
+
+  /**
+   * Merge repository config with agent config.
+   * Agent config takes precedence over repository config.
+   * Returns a config with all required fields populated.
+   */
+  private mergeConfigs(agentConfig: AgentConfig, repoConfig: RepoConfig): ResolvedAgentConfig {
+    const mergeSettings: MergeSettings = {
+      ...DEFAULT_MERGE_SETTINGS,
+      ...(repoConfig.mergeSettings ?? {}),
+      ...(agentConfig.mergeSettings ?? {}),
+    };
+
+    return {
+      ...agentConfig,
+      agentsDirectory: repoConfig.agentsDirectory ?? 'agents',
+      outputDirectory: agentConfig.outputDirectory ?? repoConfig.outputDirectory ?? 'out',
+      outputFilePattern: agentConfig.outputFilePattern ?? `${agentConfig.name.toLowerCase()}_instructions.md`,
+      sources: agentConfig.sources ?? repoConfig.sources,
+      frontmatter: agentConfig.frontmatter ?? repoConfig.frontmatter,
+      mergeSettings,
+    };
   }
 
   // ── Config loading ───────────────────────────────────────
 
   /**
    * Resolve the config path for a given agent name.
-   * Looks in `agents/<name>/agent.json`.
+   * Looks in `<agentsDir>/<name>/agent.json`.
    */
-  private agentConfigPath(agentName: string): string {
-    return path.join(this.rootDir, 'agents', agentName, 'agent.json');
+  private async agentConfigPath(agentName: string): Promise<string> {
+    const repoConfig = await this.loadRepoConfig();
+    const agentsDir = repoConfig?.agentsDirectory ?? 'agents';
+    return path.join(this.rootDir, agentsDir, agentName, 'agent.json');
   }
 
   /**
    * Load an agent configuration by name.
+   * Merges with repository-level config if present.
    */
-  async loadConfig(agentName: string): Promise<AgentConfig> {
-    const configPath = this.agentConfigPath(agentName);
+  async loadConfig(agentName: string): Promise<ResolvedAgentConfig> {
+    const configPath = await this.agentConfigPath(agentName);
 
     if (!(await fs.pathExists(configPath))) {
       throw new Error(
@@ -47,16 +107,21 @@ export class InstruxEngine {
     }
 
     const raw = await fs.readFile(configPath, 'utf-8');
-    return JSON.parse(raw) as AgentConfig;
+    const agentConfig = JSON.parse(raw) as AgentConfig;
+    
+    // Load and merge repository config
+    const repoConfig = await this.loadRepoConfig();
+    return this.mergeConfigs(agentConfig, repoConfig ?? {});
   }
 
   // ── Discovery ────────────────────────────────────────────
 
   /**
-   * List all agents found in the `agents/` directory.
+   * List all agents found in the configured agents directory.
    */
   async listAgents(): Promise<{ name: string; config: AgentConfig | null }[]> {
-    const agentsDir = path.join(this.rootDir, 'agents');
+    const repoConfig = await this.loadRepoConfig();
+    const agentsDir = path.join(this.rootDir, repoConfig?.agentsDirectory ?? 'agents');
 
     if (!(await fs.pathExists(agentsDir))) {
       return [];
@@ -87,7 +152,7 @@ export class InstruxEngine {
 
   // ── Validation ───────────────────────────────────────────
 
-  async validate(config: AgentConfig): Promise<ValidationResult> {
+  async validate(config: ResolvedAgentConfig): Promise<ValidationResult> {
     const missing: string[] = [];
     const warnings: string[] = [];
 
@@ -108,7 +173,7 @@ export class InstruxEngine {
 
   // ── Merge ────────────────────────────────────────────────
 
-  async merge(config: AgentConfig): Promise<string> {
+  async merge(config: ResolvedAgentConfig): Promise<string> {
     const { mergeSettings } = config;
     let merged = '';
     let first = true;
@@ -155,7 +220,7 @@ export class InstruxEngine {
 
   // ── Write output ─────────────────────────────────────────
 
-  async writeOutput(config: AgentConfig, content: string): Promise<string> {
+  async writeOutput(config: ResolvedAgentConfig, content: string): Promise<string> {
     const outputDir = path.join(this.rootDir, config.outputDirectory);
     await fs.ensureDir(outputDir);
 
@@ -187,7 +252,7 @@ export class InstruxEngine {
    * Returns true if the agent config uses the template compiler (v2)
    * instead of simple ordered merge.
    */
-  isCompileMode(config: AgentConfig): boolean {
+  isCompileMode(config: ResolvedAgentConfig): boolean {
     return !!config.entry;
   }
 

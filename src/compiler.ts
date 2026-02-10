@@ -18,6 +18,7 @@ import Handlebars from 'handlebars';
 import matter from 'gray-matter';
 import {
   AgentConfig,
+  ResolvedAgentConfig,
   SourceIndex,
   SourceFile,
   FrontmatterOutput,
@@ -40,13 +41,13 @@ export interface CompileResult {
 
 export class InstruxCompiler {
   private rootDir: string;
-  private config: AgentConfig;
+  private config: ResolvedAgentConfig;
   private index!: SourceIndex;
   private compileStack: Set<string> = new Set();
   private compiledFiles: Set<string> = new Set();
   private tagsUsed: Set<string> = new Set();
 
-  constructor(rootDir: string, config: AgentConfig) {
+  constructor(rootDir: string, config: ResolvedAgentConfig) {
     this.rootDir = rootDir;
     this.config = config;
   }

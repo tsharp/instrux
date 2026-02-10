@@ -4,7 +4,54 @@
 
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { AgentConfig, DEFAULT_MERGE_SETTINGS } from './types';
+import { AgentConfig, RepoConfig, DEFAULT_MERGE_SETTINGS } from './types';
+
+/**
+ * Create a repository-level config file (instrux.json) at project root.
+ */
+export async function initRepoConfig(rootDir: string): Promise<string> {
+  const configPath = path.join(rootDir, 'instrux.json');
+  
+  if (await fs.pathExists(configPath)) {
+    throw new Error(`Repository config already exists at ${path.relative(rootDir, configPath)}`);
+  }
+
+  const config: RepoConfig = {
+    agentsDirectory: 'agents',
+    outputDirectory: 'out',
+    mergeSettings: { ...DEFAULT_MERGE_SETTINGS },
+    frontmatter: { output: 'strip' },
+    sources: ['agents/base/**/*.md'],
+  };
+
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+  return path.relative(rootDir, configPath);
+}
+
+/**
+ * Ensure repository config exists.
+ * Creates it if missing, returns whether it was created and the config.
+ */
+async function ensureRepoConfig(rootDir: string): Promise<{ created: boolean; path: string; config: RepoConfig }> {
+  const configPath = path.join(rootDir, 'instrux.json');
+  
+  if (await fs.pathExists(configPath)) {
+    const raw = await fs.readFile(configPath, 'utf-8');
+    const config = JSON.parse(raw) as RepoConfig;
+    return { created: false, path: path.relative(rootDir, configPath), config };
+  }
+
+  const config: RepoConfig = {
+    agentsDirectory: 'agents',
+    outputDirectory: 'out',
+    mergeSettings: { ...DEFAULT_MERGE_SETTINGS },
+    frontmatter: { output: 'strip' },
+    sources: ['agents/base/**/*.md'],
+  };
+
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+  return { created: true, path: path.relative(rootDir, configPath), config };
+}
 
 /**
  * Create the directory structure and starter files for a new agent.
@@ -24,8 +71,16 @@ export async function initAgent(
   agentName: string,
 ): Promise<string[]> {
   const created: string[] = [];
-  const agentDir = path.join(rootDir, 'agents', agentName);
-  const baseDir = path.join(rootDir, 'agents', 'base');
+  
+  // Ensure repo config exists (create if first agent)
+  const repoConfigResult = await ensureRepoConfig(rootDir);
+  if (repoConfigResult.created) {
+    created.push(repoConfigResult.path);
+  }
+  
+  const agentsDir = repoConfigResult.config.agentsDirectory ?? 'agents';
+  const agentDir = path.join(rootDir, agentsDir, agentName);
+  const baseDir = path.join(rootDir, agentsDir, 'base');
   const outDir = path.join(rootDir, 'out');
 
   // ── agents/base/instructions.md ───────────────────────
@@ -54,12 +109,12 @@ export async function initAgent(
     outputFilePattern: `${agentName.toLowerCase()}_instructions.md`,
     files: [
       {
-        path: 'agents/base/instructions.md',
+        path: `${agentsDir}/base/instructions.md`,
         description: 'Shared base instructions',
         required: true,
       },
       {
-        path: `agents/${agentName}/specialization.md`,
+        path: `${agentsDir}/${agentName}/specialization.md`,
         description: `${agentName}-specific knowledge and instructions`,
         required: true,
       },
@@ -113,8 +168,16 @@ export async function initTemplateAgent(
   agentName: string,
 ): Promise<string[]> {
   const created: string[] = [];
-  const agentDir = path.join(rootDir, 'agents', agentName);
-  const baseDir = path.join(rootDir, 'agents', 'base');
+  
+  // Ensure repo config exists (create if first agent)
+  const repoConfigResult = await ensureRepoConfig(rootDir);
+  if (repoConfigResult.created) {
+    created.push(repoConfigResult.path);
+  }
+  
+  const agentsDir = repoConfigResult.config.agentsDirectory ?? 'agents';
+  const agentDir = path.join(rootDir, agentsDir, agentName);
+  const baseDir = path.join(rootDir, agentsDir, 'base');
   const outDir = path.join(rootDir, 'out');
 
   // ── agents/base/identity.md ───────────────────────────
@@ -179,10 +242,10 @@ export async function initTemplateAgent(
     description: `Compiled instructions for the ${agentName} agent`,
     outputDirectory: 'out',
     outputFilePattern: `${agentName.toLowerCase()}_instructions.md`,
-    entry: `agents/${agentName}/template.md`,
+    entry: `${agentsDir}/${agentName}/template.md`,
     sources: [
-      'agents/base/**/*.md',
-      `agents/${agentName}/**/*.md`,
+      `${agentsDir}/base/**/*.md`,
+      `${agentsDir}/${agentName}/**/*.md`,
     ],
     frontmatter: { output: 'strip' },
     mergeSettings: { ...DEFAULT_MERGE_SETTINGS },

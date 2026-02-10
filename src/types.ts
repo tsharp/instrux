@@ -2,6 +2,27 @@
  * instrux - Configuration and type definitions
  */
 
+// ── Repository-level configuration ──────────────────────
+
+/**
+ * Repository-level configuration file (instrux.json at project root).
+ * Provides defaults for all agents, which can be overridden per-agent.
+ */
+export interface RepoConfig {
+  /** Directory containing agent folders (default: "agents") */
+  agentsDirectory?: string;
+  /** Default output directory for all agents */
+  outputDirectory?: string;
+  /** Default merge settings for all agents */
+  mergeSettings?: Partial<MergeSettings>;
+  /** Default frontmatter settings for template mode */
+  frontmatter?: FrontmatterOutput;
+  /** Default source patterns for template mode */
+  sources?: string[];
+}
+
+// ── Agent-level configuration ───────────────────────────
+
 export interface InstruxFile {
   /** Relative path to the instruction file */
   path: string;
@@ -32,9 +53,9 @@ export interface AgentConfig {
   /** Description of the agent's purpose */
   description: string;
   /** Output directory for the merged file (relative to project root) */
-  outputDirectory: string;
+  outputDirectory?: string;
   /** Output filename pattern — supports {timestamp} placeholder */
-  outputFilePattern: string;
+  outputFilePattern?: string;
 
   // ── Simple merge mode (v1) ──────────────────────────────
 
@@ -51,14 +72,24 @@ export interface AgentConfig {
 
   /**
    * Glob patterns for source files to scan for frontmatter tags.
-   * Example: ["agents/base/*.md", "agents/MyAgent/*.md"]
-   */
+   * Example: ["agents/base/*.md", "agents/MyAgent/*md"]   */
   sources?: string[];
 
   /** Controls how frontmatter is handled in the compiled output */
   frontmatter?: FrontmatterOutput;
 
   /** Controls how files are merged together */
+  mergeSettings?: Partial<MergeSettings>;
+}
+
+/**
+ * Agent config after merging with repo config and defaults.
+ * All required fields are guaranteed to be present.
+ */
+export interface ResolvedAgentConfig extends AgentConfig {
+  agentsDirectory: string;
+  outputDirectory: string;
+  outputFilePattern: string;
   mergeSettings: MergeSettings;
 }
 
