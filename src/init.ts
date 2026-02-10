@@ -9,7 +9,7 @@ import { AgentConfig, RepoConfig, DEFAULT_MERGE_SETTINGS } from './types';
 /**
  * Create a repository-level config file (instrux.json) at project root.
  */
-export async function initRepoConfig(rootDir: string): Promise<string> {
+export async function initRepoConfig(rootDir: string, agentsDirectory: string = 'agents'): Promise<string> {
   const configPath = path.join(rootDir, 'instrux.json');
   
   if (await fs.pathExists(configPath)) {
@@ -17,11 +17,11 @@ export async function initRepoConfig(rootDir: string): Promise<string> {
   }
 
   const config: RepoConfig = {
-    agentsDirectory: 'agents',
+    agentsDirectory,
     outputDirectory: 'out',
     mergeSettings: { ...DEFAULT_MERGE_SETTINGS },
     frontmatter: { output: 'strip' },
-    sources: ['agents/base/**/*.md'],
+    sources: ['base/**/*.md'], // relative to agentsDirectory
   };
 
   await fs.writeFile(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
@@ -41,12 +41,13 @@ async function ensureRepoConfig(rootDir: string): Promise<{ created: boolean; pa
     return { created: false, path: path.relative(rootDir, configPath), config };
   }
 
+  const agentsDirectory = 'agents';
   const config: RepoConfig = {
-    agentsDirectory: 'agents',
+    agentsDirectory,
     outputDirectory: 'out',
     mergeSettings: { ...DEFAULT_MERGE_SETTINGS },
     frontmatter: { output: 'strip' },
-    sources: ['agents/base/**/*.md'],
+    sources: ['base/**/*.md'], // relative to agentsDirectory
   };
 
   await fs.writeFile(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
@@ -242,11 +243,10 @@ export async function initTemplateAgent(
     description: `Compiled instructions for the ${agentName} agent`,
     outputDirectory: 'out',
     outputFilePattern: `${agentName.toLowerCase()}_instructions.md`,
-    entry: `${agentsDir}/${agentName}/template.md`,
-    sources: [
-      `${agentsDir}/base/**/*.md`,
-      `${agentsDir}/${agentName}/**/*.md`,
-    ],
+    entry: 'template.md', // Relative to agent directory
+    // Note: sources are auto-generated:
+    //   1. Agent's own directory is always included
+    //   2. Repo-level sources from instrux.json are added
     frontmatter: { output: 'strip' },
     mergeSettings: { ...DEFAULT_MERGE_SETTINGS },
   };

@@ -69,12 +69,43 @@ export class InstruxEngine {
       ...(agentConfig.mergeSettings ?? {}),
     };
 
+    const agentsDirectory = repoConfig.agentsDirectory ?? 'agents';
+    const agentName = agentConfig.name;
+    const agentDir = `${agentsDirectory}/${agentName}`;
+    
+    // Resolve entry relative to agent directory
+    let entry = agentConfig.entry;
+    if (entry) {
+      // Entry is ALWAYS relative to the agent's directory
+      entry = `${agentDir}/${entry}`;
+    }
+    
+    // Build sources array:
+    const sources: string[] = [];
+    
+    // 1. ALWAYS include the agent's own directory and subdirectories
+    sources.push(`${agentDir}/**/*.md`);
+    
+    // 2. Add agent-specific sources from agent.json (if defined)
+    if (agentConfig.sources && agentConfig.sources.length > 0) {
+      sources.push(...agentConfig.sources);
+    }
+    
+    // 3. Add repo-level sources from instrux.json (relative to agentsDirectory)
+    if (repoConfig.sources && repoConfig.sources.length > 0) {
+      sources.push(...repoConfig.sources.map(s => `${agentsDirectory}/${s}`));
+    } else {
+      // Default: include base directory if no repo sources defined
+      sources.push(`${agentsDirectory}/base/**/*.md`);
+    }
+
     return {
       ...agentConfig,
-      agentsDirectory: repoConfig.agentsDirectory ?? 'agents',
+      entry,
+      agentsDirectory,
       outputDirectory: agentConfig.outputDirectory ?? repoConfig.outputDirectory ?? 'out',
-      outputFilePattern: agentConfig.outputFilePattern ?? `${agentConfig.name.toLowerCase()}_instructions.md`,
-      sources: agentConfig.sources ?? repoConfig.sources,
+      outputFilePattern: agentConfig.outputFilePattern ?? `${agentName.toLowerCase()}_instructions.md`,
+      sources,
       frontmatter: agentConfig.frontmatter ?? repoConfig.frontmatter,
       mergeSettings,
     };

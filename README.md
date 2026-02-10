@@ -77,7 +77,7 @@ This creates an `instrux.json` file with default settings:
   "frontmatter": {
     "output": "strip"
   },
-  "sources": ["agents/base/**/*.md"]
+  "sources": ["base/**/*.md"]
 }
 ```
 
@@ -89,7 +89,7 @@ This creates an `instrux.json` file with default settings:
 | `outputDirectory` | `"out"` | Where to write compiled output files |
 | `mergeSettings` | See above | Default merge behavior for all agents |
 | `frontmatter` | `{ output: "strip" }` | How to handle frontmatter in output |
-| `sources` | `["agents/base/**/*.md"]` | Default source patterns for template mode |
+| `sources` | `["base/**/*.md"]` | Shared source patterns (relative to agentsDirectory) for template mode |
 
 **Benefits:**
 - Set defaults once for all agents
@@ -276,11 +276,7 @@ Access the current file's frontmatter value:
   "description": "Compiled instructions for MyAgent",
   "outputDirectory": "out",
   "outputFilePattern": "myagent_instructions.md",
-  "entry": "agents/MyAgent/template.md",
-  "sources": [
-    "agents/base/**/*.md",
-    "agents/MyAgent/**/*.md"
-  ],
+  "entry": "template.md",
   "frontmatter": {
     "output": "strip"
   },
@@ -293,9 +289,23 @@ Access the current file's frontmatter value:
 
 | Field | Description |
 |---|---|
-| `entry` | The Handlebars template that drives compilation |
-| `sources` | Glob patterns for files to scan and index by tag |
+| `entry` | The Handlebars template file **relative to the agent's directory** (e.g., `"template.md"` → `agents/MyAgent/template.md`) |
+| `sources` | *(Optional)* Additional glob patterns to scan. **Agent's own directory is always included automatically** (e.g., `agents/MyAgent/**/*.md`). Patterns from `instrux.json` are also included, resolved relative to `agentsDirectory`. |
 | `frontmatter.output` | `"strip"` (default) or `"preserve"` entry file's non-instrux frontmatter |
+
+**Path Resolution Rules:**
+
+1. **`entry`** is always relative to the agent's directory:
+   - `"entry": "template.md"` → `agents/MyAgent/template.md`
+   - No need to specify the full path!
+
+2. **`sources`** work in layers:
+   - **Layer 1 (automatic):** The agent's directory is always included: `agents/MyAgent/**/*.md`
+   - **Layer 2 (repo config):** Patterns from `instrux.json` are resolved relative to `agentsDirectory`:
+     - `"sources": ["base/**/*.md"]` in `instrux.json` → `agents/base/**/*.md`
+   - **Layer 3 (agent config):** Agent-specific patterns from `agent.json` are used as-is
+
+3. **Why?** This ensures every agent can use its own markdown files without explicit configuration, while still accessing shared resources from the base directory.
 
 ### Project Layout (Template Mode)
 

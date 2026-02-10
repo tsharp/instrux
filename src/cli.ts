@@ -76,8 +76,9 @@ program
         console.log(`\nNext steps:`);
         console.log(`  1. Edit ${agentsDir}/base/*.md to define shared instructions`);
         console.log(`  2. Edit ${agentsDir}/${name}/domain.md with domain knowledge`);
-        console.log(`  3. Edit ${agentsDir}/${name}/template.md to compose via {{tag "..."}}`);
-        console.log(`  4. Run: instrux build ${name}\n`);
+        console.log(`  3. Edit ${agentsDir}/${name}/template.md to compose via {{tag "..."}}`); 
+        console.log(`  4. Note: "entry" in agent.json is relative to the agent's directory`);
+        console.log(`  5. Run: instrux build ${name}\n`);
       } else {
         console.log(`\nNext steps:`);
         console.log(`  1. Edit ${agentsDir}/${name}/specialization.md with your instructions`);
@@ -104,12 +105,17 @@ program
       console.log(`Created: ${created}\n`);
       console.log('This file provides default settings for all agents.');
       console.log('Individual agent configs will inherit and can override these settings.\n');
+      
+      // Show actual values from created config
+      const configPath = path.join(cwd, created);
+      const actualConfig = JSON.parse(await fs.readFile(configPath, 'utf-8'));
+      
       console.log('Default settings:');
-      console.log('  - agentsDirectory: "agents"');
-      console.log('  - outputDirectory: "out"');
+      console.log(`  - agentsDirectory: "${actualConfig.agentsDirectory}"`);
+      console.log(`  - outputDirectory: "${actualConfig.outputDirectory}"`);
       console.log('  - mergeSettings: standard defaults');
       console.log('  - frontmatter: { output: "strip" }');
-      console.log('  - sources: ["agents/base/**/*.md"]\n');
+      console.log(`  - sources: ${JSON.stringify(actualConfig.sources)} (relative to agentsDirectory)\n`);
     } catch (err: any) {
       console.error(`❌ ${err.message}`);
       process.exit(1);
@@ -123,7 +129,8 @@ program
   .description('Build (merge) instruction files for an agent')
   .option('--all', 'Build all agents')
   .action(async (name: string | undefined, opts: { all?: boolean }) => {
-    const engine = new InstruxEngine();
+    const cwd = process.cwd();
+    const engine = new InstruxEngine(cwd);
 
     try {
       if (opts.all) {
@@ -165,7 +172,8 @@ program
   .command('list')
   .description('List all available agents')
   .action(async () => {
-    const engine = new InstruxEngine();
+    const cwd = process.cwd();
+    const engine = new InstruxEngine(cwd);
     const agents = await engine.listAgents();
 
     if (agents.length === 0) {
@@ -200,7 +208,8 @@ program
   .command('config <name>')
   .description('Display the configuration for an agent')
   .action(async (name: string) => {
-    const engine = new InstruxEngine();
+    const cwd = process.cwd();
+    const engine = new InstruxEngine(cwd);
 
     try {
       const config = await engine.loadConfig(name);
@@ -237,7 +246,8 @@ program
   .command('validate <name>')
   .description('Check that all required instruction files exist')
   .action(async (name: string) => {
-    const engine = new InstruxEngine();
+    const cwd = process.cwd();
+    const engine = new InstruxEngine(cwd);
 
     try {
       const config = await engine.loadConfig(name);

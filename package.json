@@ -1,6 +1,6 @@
 {
   "name": "instrux",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A CLI tool for composing modular AI agent instruction files into complete system prompts",
   "repository": {
     "type": "git",

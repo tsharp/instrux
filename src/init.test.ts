@@ -33,7 +33,17 @@ describe('Init Functions', () => {
       expect(config.outputDirectory).toBe('out');
       expect(config.mergeSettings).toBeDefined();
       expect(config.frontmatter).toEqual({ output: 'strip' });
-      expect(config.sources).toEqual(['agents/base/**/*.md']);
+      expect(config.sources).toEqual(['base/**/*.md']); // relative to agentsDirectory
+    });
+
+    it('should create repo config with custom agentsDirectory', async () => {
+      const created = await initRepoConfig(testDir, 'src/agents');
+      
+      const configPath = path.join(testDir, 'instrux.json');
+      const config = JSON.parse(await fs.readFile(configPath, 'utf-8')) as RepoConfig;
+      
+      expect(config.agentsDirectory).toBe('src/agents');
+      expect(config.sources).toEqual(['base/**/*.md']); // still relative to agentsDirectory
     });
 
     it('should throw error if config already exists', async () => {
@@ -149,10 +159,10 @@ describe('Init Functions', () => {
       const configPath = path.join(testDir, 'src', 'agents', 'MyTemplate', 'agent.json');
       const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
       
-      // Check paths use custom directory
-      expect(config.entry).toBe('src/agents/MyTemplate/template.md');
-      expect(config.sources).toContain('src/agents/base/**/*.md');
-      expect(config.sources).toContain('src/agents/MyTemplate/**/*.md');
+      // Entry is now relative to agent directory
+      expect(config.entry).toBe('template.md');
+      // Sources are auto-generated, not stored in agent.json
+      expect(config.sources).toBeUndefined();
     });
 
     it('should create base files with frontmatter', async () => {

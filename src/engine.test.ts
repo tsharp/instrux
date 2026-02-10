@@ -33,7 +33,7 @@ describe('InstruxEngine', () => {
       const repoConfig: RepoConfig = {
         agentsDirectory: 'src/agents',
         outputDirectory: 'build',
-        sources: ['src/agents/base/**/*.md'],
+        sources: ['base/**/*.md'], // relative to agentsDirectory
       };
 
       await fs.writeFile(
@@ -57,6 +57,80 @@ describe('InstruxEngine', () => {
 
       const loaded = await engine.loadRepoConfig();
       expect(loaded?.agentsDirectory).toBeUndefined();
+    });
+
+    it('should default sources based on agentsDirectory in mergeConfigs', async () => {
+      const repoConfig: RepoConfig = {
+        agentsDirectory: 'src/agents',
+        outputDirectory: 'out',
+      };
+
+      await fs.writeFile(
+        path.join(testDir, 'instrux.json'),
+        JSON.stringify(repoConfig, null, 2)
+      );
+
+      // Create agent without sources specified
+      const agentConfig: AgentConfig = {
+        name: 'TestAgent',
+        description: 'Test agent',
+        entry: 'template.md', // relative to agent directory
+        files: [],
+      };
+
+      const agentDir = path.join(testDir, 'src', 'agents', 'TestAgent');
+      await fs.ensureDir(agentDir);
+      await fs.writeFile(
+        path.join(agentDir, 'agent.json'),
+        JSON.stringify(agentConfig, null, 2)
+      );
+
+      const resolved = await engine.loadConfig('TestAgent');
+      
+      // Entry should be resolved relative to agent directory
+      expect(resolved.entry).toBe('src/agents/TestAgent/template.md');
+      
+      // Sources should include: 1) agent dir, 2) default base
+      expect(resolved.sources).toEqual([
+        'src/agents/TestAgent/**/*.md',
+        'src/agents/base/**/*.md'
+      ]);
+    });
+
+    it('should resolve repo sources relative to agentsDirectory', async () => {
+      const repoConfig: RepoConfig = {
+        agentsDirectory: 'agents',
+        outputDirectory: 'out',
+        sources: ['base/**/*.md', 'shared/**/*.md'], // relative to agentsDirectory
+      };
+
+      await fs.writeFile(
+        path.join(testDir, 'instrux.json'),
+        JSON.stringify(repoConfig, null, 2)
+      );
+
+      const agentConfig: AgentConfig = {
+        name: 'TestAgent',
+        description: 'Test agent',
+        entry: 'template.md',
+        files: [],
+      };
+
+      const agentDir = path.join(testDir, 'agents', 'TestAgent');
+      await fs.ensureDir(agentDir);
+      await fs.writeFile(
+        path.join(agentDir, 'agent.json'),
+        JSON.stringify(agentConfig, null, 2)
+      );
+
+      const resolved = await engine.loadConfig('TestAgent');
+      
+      // Sources should include: 1) agent dir, 2) repo sources (resolved)
+      expect(resolved.sources).toEqual([
+        'agents/TestAgent/**/*.md',
+        'agents/base/**/*.md',
+        'agents/shared/**/*.md'
+      ]);
     });
   });
 
