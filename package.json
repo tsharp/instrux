@@ -19,7 +19,8 @@
     "dev": "ts-node src/cli.ts",
     "watch": "tsc --watch",
     "prepublishOnly": "npm run build",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "echo \"No tests yet\" && exit 0",
+    "publish:script": "pwsh -File publish.ps1"
   },
   "keywords": [
     "ai",
