@@ -1,0 +1,57 @@
+{
+  "name": "instrux",
+  "version": "0.1.0",
+  "description": "A CLI tool for composing modular AI agent instruction files into complete system prompts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tsharp/instrux.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tsharp/instrux/issues"
+  },
+  "homepage": "https://github.com/tsharp/instrux#readme",
+  "main": "dist/index.js",
+  "bin": {
+    "instrux": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts",
+    "watch": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "instructions",
+    "system-prompt",
+    "prompt-engineering",
+    "llm",
+    "merge",
+    "compose",
+    "cli"
+  ],
+  "author": "",
+  "license": "(MIT OR Apache-2.0)",
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "fast-glob": "^3.3.0",
+    "fs-extra": "^11.0.0",
+    "gray-matter": "^4.0.3",
+    "handlebars": "^4.7.8"
+  }
+}
