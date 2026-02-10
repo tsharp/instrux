@@ -231,9 +231,16 @@ export class InstruxEngine {
         continue;
       }
 
+      // Trim content from this file
+      content = content.trim();
+
       // separator between sections (not before the first)
-      if (!first && mergeSettings.addSeparators) {
-        merged += `\n${mergeSettings.separatorStyle}\n\n`;
+      if (!first) {
+        if (mergeSettings.addSeparators) {
+          merged += `\n${mergeSettings.separatorStyle}\n`;
+        } else {
+          merged += '\n';
+        }
       }
 
       if (mergeSettings.includeFileHeaders) {
@@ -242,11 +249,10 @@ export class InstruxEngine {
       }
 
       merged += content;
-      if (!content.endsWith('\n')) merged += '\n';
       first = false;
     }
 
-    return merged;
+    return merged.trim();
   }
 
   // ── Write output ─────────────────────────────────────────

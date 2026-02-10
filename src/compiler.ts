@@ -152,8 +152,8 @@ export class InstruxCompiler {
   private registerHelpers(hbs: typeof Handlebars): void {
     const self = this;
     const sep = this.config.mergeSettings.addSeparators
-      ? `\n${this.config.mergeSettings.separatorStyle}\n\n`
-      : '\n\n';
+      ? `\n${this.config.mergeSettings.separatorStyle}\n`
+      : '\n';
 
     /**
      * {{tag "tagname"}}
@@ -170,7 +170,7 @@ export class InstruxCompiler {
       }
 
       const sorted = sortSourceFiles(files);
-      const rendered = sorted.map(f => self.compileFile(f.path));
+      const rendered = sorted.map(f => self.compileFile(f.path).trim());
       return new hbs.SafeString(rendered.join(sep));
     });
 
@@ -180,7 +180,7 @@ export class InstruxCompiler {
      * Include a specific file by path. Recursively compiled.
      */
     hbs.registerHelper('file', function (filePath: string) {
-      return new hbs.SafeString(self.compileFile(filePath));
+      return new hbs.SafeString(self.compileFile(filePath).trim());
     });
 
     /**
@@ -205,7 +205,7 @@ export class InstruxCompiler {
 
       const sorted = sortSourceFiles(files);
       return sorted.map(f => ({
-        body: self.compileFile(f.path),
+        body: self.compileFile(f.path).trim(),
         raw: f.content,
         path: f.path,
         title: f.frontmatter.title ?? path.basename(f.path, '.md'),
