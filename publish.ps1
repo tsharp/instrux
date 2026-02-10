@@ -41,6 +41,9 @@ if ($gitStatus) {
 
 # Build the project
 if (-not $SkipBuild) {
+    Write-Host "`n🔨 Restoring Dependencies..." -ForegroundColor Yellow
+    npm i
+
     Write-Host "`n🔨 Building project..." -ForegroundColor Yellow
     npm run build
     if ($LASTEXITCODE -ne 0) {

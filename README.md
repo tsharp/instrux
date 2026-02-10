@@ -378,6 +378,46 @@ const compiler = new InstruxCompiler(process.cwd(), config);
 const { output, filesCompiled, tagsUsed } = await compiler.compile();
 ```
 
+## Development
+
+### Running Tests
+
+This project uses Jest for testing:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Building
+
+```bash
+# Build TypeScript to JavaScript
+npm run build
+
+# Watch mode for development
+npm run watch
+```
+
+### Project Structure
+
+```
+src/
+  cli.ts           # CLI entry point
+  engine.ts        # Core build engine
+  compiler.ts      # Template compiler
+  init.ts          # Scaffolding functions
+  frontmatter.ts   # Frontmatter parsing
+  types.ts         # TypeScript types
+  *.test.ts        # Jest test files
+```
+
 ## License
 
 This project is dual-licensed under your choice of:

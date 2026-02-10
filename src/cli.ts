@@ -15,8 +15,27 @@
 
 import { Command } from 'commander';
 import * as path from 'path';
+import * as fs from 'fs-extra';
 import { InstruxEngine } from './engine';
 import { initAgent, initTemplateAgent, initRepoConfig } from './init';
+import { RepoConfig } from './types';
+
+/**
+ * Load repo config to get agentsDirectory for help text.
+ */
+async function getAgentsDir(rootDir: string): Promise<string> {
+  const configPath = path.join(rootDir, 'instrux.json');
+  if (await fs.pathExists(configPath)) {
+    try {
+      const raw = await fs.readFile(configPath, 'utf-8');
+      const config = JSON.parse(raw) as RepoConfig;
+      return config.agentsDirectory ?? 'agents';
+    } catch {
+      return 'agents';
+    }
+  }
+  return 'agents';
+}
 
 const pkg = require('../package.json');
 const program = new Command();
@@ -41,6 +60,7 @@ program
 
       const mode = opts.template ? 'template' : 'simple';
       const isFirstAgent = created.includes('instrux.json');
+      const agentsDir = await getAgentsDir(cwd);
       
       console.log(`\n\u2705 Agent "${name}" initialized (${mode} mode)!\n`);
       
@@ -54,14 +74,14 @@ program
 
       if (opts.template) {
         console.log(`\nNext steps:`);
-        console.log(`  1. Edit agents/base/*.md to define shared instructions`);
-        console.log(`  2. Edit agents/${name}/domain.md with domain knowledge`);
-        console.log(`  3. Edit agents/${name}/template.md to compose via {{tag "..."}}`);
+        console.log(`  1. Edit ${agentsDir}/base/*.md to define shared instructions`);
+        console.log(`  2. Edit ${agentsDir}/${name}/domain.md with domain knowledge`);
+        console.log(`  3. Edit ${agentsDir}/${name}/template.md to compose via {{tag "..."}}`);
         console.log(`  4. Run: instrux build ${name}\n`);
       } else {
         console.log(`\nNext steps:`);
-        console.log(`  1. Edit agents/${name}/specialization.md with your instructions`);
-        console.log(`  2. Edit agents/${name}/agent.json to add more files if needed`);
+        console.log(`  1. Edit ${agentsDir}/${name}/specialization.md with your instructions`);
+        console.log(`  2. Edit ${agentsDir}/${name}/agent.json to add more files if needed`);
         console.log(`  3. Run: instrux build ${name}\n`);
       }
     } catch (err: any) {
@@ -85,6 +105,7 @@ program
       console.log('This file provides default settings for all agents.');
       console.log('Individual agent configs will inherit and can override these settings.\n');
       console.log('Default settings:');
+      console.log('  - agentsDirectory: "agents"');
       console.log('  - outputDirectory: "out"');
       console.log('  - mergeSettings: standard defaults');
       console.log('  - frontmatter: { output: "strip" }');
@@ -156,10 +177,16 @@ program
     console.log('\nAvailable agents:\n');
     for (const agent of agents) {
       if (agent.config) {
-        const mode = agent.config.entry ? 'template' : 'simple';
-        console.log(`  ${agent.name}  [${mode}]`);
-        console.log(`    ${agent.config.description}`);
-        console.log(`    Files: ${agent.config.files?.length ?? agent.config.sources?.length ?? 0}  \u2192  ${agent.config.outputDirectory}/${agent.config.outputFilePattern}`);
+        try {
+          // Load full resolved config to get all values with defaults
+          const resolved = await engine.loadConfig(agent.name);
+          const mode = resolved.entry ? 'template' : 'simple';
+          console.log(`  ${agent.name}  [${mode}]`);
+          console.log(`    ${resolved.description}`);
+          console.log(`    Files: ${resolved.files?.length ?? resolved.sources?.length ?? 0}  \u2192  ${resolved.outputDirectory}/${resolved.outputFilePattern}`);
+        } catch (err) {
+          console.log(`  ${agent.name}  (error loading config)`);
+        }
       } else {
         console.log(`  ${agent.name}  (invalid or missing agent.json)`);
       }
