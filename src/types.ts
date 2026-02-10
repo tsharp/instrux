@@ -103,6 +103,7 @@ export interface BuildResult {
   outputPath: string;
   contentLength: number;
   contentHash: string;
+  estimatedTokens: number;
   filesIncluded: number;
   filesSkipped: number;
 }

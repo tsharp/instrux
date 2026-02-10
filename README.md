@@ -22,6 +22,12 @@ npx instrux <command>
 instrux init MyAgent
 # Edit agents/MyAgent/specialization.md
 instrux build MyAgent
+# Output:
+# ✅ MyAgent built successfully
+#    Output: out/myagent_instructions.md
+#    Size:   1,234 chars
+#    Tokens: ~925 (estimated)
+#    Hash:   a1b2c3d4
 ```
 
 ### Template mode — frontmatter tags + Handlebars
@@ -86,7 +92,7 @@ This creates an `instrux.json` file with default settings:
 | Field | Default | Description |
 |---|---|---|
 | `agentsDirectory` | `"agents"` | Directory containing agent folders (e.g., `"src/agents"` for src/agents/MyAgent/) |
-| `outputDirectory` | `"out"` | Where to write compiled output files |
+| `outputDirectory` | `"out"` | Where to write compiled output files. Can be relative (e.g., `"out"`, `"build/prompts"`) or absolute. Supports sub-paths. |
 | `mergeSettings` | See above | Default merge behavior for all agents |
 | `frontmatter` | `{ output: "strip" }` | How to handle frontmatter in output |
 | `sources` | `["base/**/*.md"]` | Shared source patterns (relative to agentsDirectory) for template mode |
@@ -379,7 +385,10 @@ await initTemplateAgent(process.cwd(), 'MyAgent');
 // Build (auto-detects simple vs template mode)
 const engine = new InstruxEngine();
 const result = await engine.build('MyAgent');
-console.log(result.outputPath);
+console.log(result.outputPath);        // "out/myagent_instructions.md"
+console.log(result.contentLength);     // 1234
+console.log(result.estimatedTokens);   // 925
+console.log(result.contentHash);       // "a1b2c3d4"
 
 // Or use the compiler directly
 import { buildSourceIndex } from 'instrux';

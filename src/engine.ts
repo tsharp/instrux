@@ -264,7 +264,11 @@ export class InstruxEngine {
   // ── Write output ─────────────────────────────────────────
 
   async writeOutput(config: ResolvedAgentConfig, content: string): Promise<string> {
-    const outputDir = path.join(this.rootDir, config.outputDirectory);
+    // Resolve output directory relative to rootDir, supporting sub-paths
+    const outputDir = path.isAbsolute(config.outputDirectory)
+      ? config.outputDirectory
+      : path.resolve(this.rootDir, config.outputDirectory);
+    
     await fs.ensureDir(outputDir);
 
     let fileName = config.outputFilePattern;
@@ -313,6 +317,7 @@ export class InstruxEngine {
         outputPath: path.relative(this.rootDir, outputPath),
         contentLength: result.output.length,
         contentHash: this.contentHash(result.output),
+        estimatedTokens: this.estimateTokens(result.output),
         filesIncluded: result.filesCompiled,
         filesSkipped: 0,
       };
@@ -340,12 +345,24 @@ export class InstruxEngine {
       outputPath: path.relative(this.rootDir, outputPath),
       contentLength: content.length,
       contentHash: this.contentHash(content),
+      estimatedTokens: this.estimateTokens(content),
       filesIncluded: config.files.length,
       filesSkipped: 0,
     };
   }
 
   // ── Helpers ──────────────────────────────────────────────
+
+  /**
+   * Estimate token count for text content.
+   * Uses a simple approximation: ~0.75 tokens per word for English text.
+   */
+  estimateTokens(content: string): number {
+    // Count words (split by whitespace and filter empty)
+    const words = content.split(/\s+/).filter(w => w.length > 0).length;
+    // Approximate: 0.75 tokens per word (accounts for subword tokenization)
+    return Math.ceil(words * 0.75);
+  }
 
   contentHash(content: string): string {
     return crypto
