@@ -72,6 +72,7 @@ This creates an `instrux.json` file with default settings:
 {
   "agentsDirectory": "agents",
   "outputDirectory": "out",
+  "tokenizerModel": "gpt-4",
   "mergeSettings": {
     "addSeparators": true,
     "separatorStyle": "---",
@@ -93,6 +94,7 @@ This creates an `instrux.json` file with default settings:
 |---|---|---|
 | `agentsDirectory` | `"agents"` | Directory containing agent folders (e.g., `"src/agents"` for src/agents/MyAgent/) |
 | `outputDirectory` | `"out"` | Where to write compiled output files. Can be relative (e.g., `"out"`, `"build/prompts"`) or absolute. Supports sub-paths. |
+| `tokenizerModel` | `"gpt-4"` | Model to use for token estimation. Supports any model available in tiktoken (e.g., `"gpt-4"`, `"gpt-3.5-turbo"`, `"claude"`) |
 | `mergeSettings` | See above | Default merge behavior for all agents |
 | `frontmatter` | `{ output: "strip" }` | How to handle frontmatter in output |
 | `sources` | `["base/**/*.md"]` | Shared source patterns (relative to agentsDirectory) for template mode |

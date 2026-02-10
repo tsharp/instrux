@@ -19,6 +19,8 @@ export interface RepoConfig {
   frontmatter?: FrontmatterOutput;
   /** Default source patterns for template mode */
   sources?: string[];
+  /** Model to use for token estimation (default: "gpt-4") */
+  tokenizerModel?: string;
 }
 
 // ── Agent-level configuration ───────────────────────────
@@ -91,6 +93,7 @@ export interface ResolvedAgentConfig extends AgentConfig {
   outputDirectory: string;
   outputFilePattern: string;
   mergeSettings: MergeSettings;
+  tokenizerModel: string;
 }
 
 export interface ValidationResult {

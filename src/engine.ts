@@ -9,6 +9,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { encoding_for_model } from 'tiktoken';
 import {
   AgentConfig,
   ResolvedAgentConfig,
@@ -108,6 +109,7 @@ export class InstruxEngine {
       sources,
       frontmatter: agentConfig.frontmatter ?? repoConfig.frontmatter,
       mergeSettings,
+      tokenizerModel: repoConfig.tokenizerModel ?? 'gpt-4',
     };
   }
 
@@ -317,7 +319,7 @@ export class InstruxEngine {
         outputPath: path.relative(this.rootDir, outputPath),
         contentLength: result.output.length,
         contentHash: this.contentHash(result.output),
-        estimatedTokens: this.estimateTokens(result.output),
+        estimatedTokens: this.estimateTokens(result.output, config.tokenizerModel),
         filesIncluded: result.filesCompiled,
         filesSkipped: 0,
       };
@@ -345,7 +347,7 @@ export class InstruxEngine {
       outputPath: path.relative(this.rootDir, outputPath),
       contentLength: content.length,
       contentHash: this.contentHash(content),
-      estimatedTokens: this.estimateTokens(content),
+      estimatedTokens: this.estimateTokens(content, config.tokenizerModel),
       filesIncluded: config.files.length,
       filesSkipped: 0,
     };
@@ -354,14 +356,21 @@ export class InstruxEngine {
   // ── Helpers ──────────────────────────────────────────────
 
   /**
-   * Estimate token count for text content.
-   * Uses a simple approximation: ~0.75 tokens per word for English text.
+   * Estimate token count for text content using tiktoken.
+   * Falls back to word-based estimation if tiktoken fails.
    */
-  estimateTokens(content: string): number {
-    // Count words (split by whitespace and filter empty)
-    const words = content.split(/\s+/).filter(w => w.length > 0).length;
-    // Approximate: 0.75 tokens per word (accounts for subword tokenization)
-    return Math.ceil(words * 0.75);
+  estimateTokens(content: string, model: string = 'gpt-4'): number {
+    try {
+      // Use specified model's tokenizer for accurate token counting
+      const encoder = encoding_for_model(model as any);
+      const tokens = encoder.encode(content);
+      encoder.free(); // Clean up WASM resources
+      return tokens.length;
+    } catch (error) {
+      // Fallback to word-based estimation if tiktoken fails
+      const words = content.split(/\s+/).filter(w => w.length > 0).length;
+      return Math.ceil(words * 0.75);
+    }
   }
 
   contentHash(content: string): string {
