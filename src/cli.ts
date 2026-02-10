@@ -274,7 +274,7 @@ function printBuildResult(name: string, result: any) {
   console.log(`✅ ${name} built successfully`);
   console.log(`   Output: ${result.outputPath}`);
   console.log(`   Size:   ${result.contentLength.toLocaleString()} chars`);
-  console.log(`   Tokens: ~${result.estimatedTokens.toLocaleString()} (estimated)`);
+  console.log(`   Tokens: ~${result.estimatedTokens.tiktoken.toLocaleString()} (tiktoken) / ~${result.estimatedTokens.fallback.toLocaleString()} (fallback)`);
   console.log(`   Hash:   ${result.contentHash}`);
 }
 

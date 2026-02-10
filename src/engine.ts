@@ -357,19 +357,23 @@ export class InstruxEngine {
 
   /**
    * Estimate token count for text content using tiktoken.
-   * Falls back to word-based estimation if tiktoken fails.
+   * Returns both tiktoken-based and fallback estimates.
    */
-  estimateTokens(content: string, model: string = 'gpt-4'): number {
+  estimateTokens(content: string, model: string = 'gpt-4'): { tiktoken: number; fallback: number } {
+    // Calculate fallback estimate
+    const words = content.split(/\s+/).filter(w => w.length > 0);
+    const totalChars = words.reduce((sum, word) => sum + word.length + 1, 0); // word length + 1 space
+    const fallback = Math.ceil(totalChars * 0.75); // ~0.75 tokens per character
+
     try {
       // Use specified model's tokenizer for accurate token counting
       const encoder = encoding_for_model(model as any);
       const tokens = encoder.encode(content);
       encoder.free(); // Clean up WASM resources
-      return tokens.length;
+      return { tiktoken: tokens.length, fallback };
     } catch (error) {
-      // Fallback to word-based estimation if tiktoken fails
-      const words = content.split(/\s+/).filter(w => w.length > 0).length;
-      return Math.ceil(words * 0.75);
+      // If tiktoken fails, use fallback for both
+      return { tiktoken: -1, fallback };
     }
   }
 

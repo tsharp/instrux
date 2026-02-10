@@ -26,7 +26,7 @@ instrux build MyAgent
 # ✅ MyAgent built successfully
 #    Output: out/myagent_instructions.md
 #    Size:   1,234 chars
-#    Tokens: ~925 (estimated)
+#    Tokens: ~925 (tiktoken) / ~900 (fallback)
 #    Hash:   a1b2c3d4
 ```
 
@@ -387,10 +387,11 @@ await initTemplateAgent(process.cwd(), 'MyAgent');
 // Build (auto-detects simple vs template mode)
 const engine = new InstruxEngine();
 const result = await engine.build('MyAgent');
-console.log(result.outputPath);        // "out/myagent_instructions.md"
-console.log(result.contentLength);     // 1234
-console.log(result.estimatedTokens);   // 925
-console.log(result.contentHash);       // "a1b2c3d4"
+console.log(result.outputPath);                    // "out/myagent_instructions.md"
+console.log(result.contentLength);                 // 1234
+console.log(result.estimatedTokens.tiktoken);      // 925
+console.log(result.estimatedTokens.fallback);      // 900
+console.log(result.contentHash);                   // "a1b2c3d4"
 
 // Or use the compiler directly
 import { buildSourceIndex } from 'instrux';
