@@ -90,8 +90,11 @@ export class InstruxCompiler {
 
     output += body;
 
-    // Ensure trailing newline
-    if (!output.endsWith('\n')) output += '\n';
+    // Trim the final output and ensure trailing newline
+    output = output.trim();
+    if (output.length > 0 && !output.endsWith('\n')) {
+      output += '\n';
+    }
 
     return {
       output,

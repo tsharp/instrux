@@ -252,7 +252,13 @@ export class InstruxEngine {
       first = false;
     }
 
-    return merged.trim();
+    // Trim the final output and ensure trailing newline
+    merged = merged.trim();
+    if (merged.length > 0 && !merged.endsWith('\n')) {
+      merged += '\n';
+    }
+    
+    return merged;
   }
 
   // ── Write output ─────────────────────────────────────────
